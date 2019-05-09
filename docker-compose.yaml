@@ -35,6 +35,8 @@ services:
       context: ./api
       dockerfile: docker/cli/Dockerfile
     image: "${PROJECT_ID}-backend"
+    env_file:
+      - .env
     volumes:
       - ./api:/app:cached
 
@@ -47,6 +49,8 @@ services:
         CLI_IMAGE: "${PROJECT_ID}-backend"
     ports:
       - "8080:80"
+    env_file:
+      - .env
     labels:
       - 'traefik.backend=backend_nginx'
       - 'traefik.port=8080'
