@@ -1,0 +1,83 @@
+version: '2.3'
+
+services:
+
+  ## 80: Reverse proxy: Traefik.
+  traefik:
+    image: traefik
+    container_name: "${PROJECT_ID}_traefik"
+    command: -c /dev/null --web --docker --logLevel=INFO
+    ports:
+      - '${PROJECT_PORT}:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+
+  ## 3000: Frontend: Nuxt.js.
+  node:
+    build:
+      context: ./www
+      dockerfile: Dockerfile
+    image: "${PROJECT_ID}-frontend"
+    command: [ "npm", "run", "dev" ]
+    ports:
+      - "3000:3000"
+    labels:
+      - 'traefik.backend=frontend'
+      - 'traefik.port=3000'
+      - 'traefik.frontend.passHostHeader=true'
+      - 'traefik.frontend.rule=Host:${PROJECT_ID}.localhost,www.${PROJECT_ID}.localhost'
+    volumes:
+      - ./www:/app:cached
+
+  ## Backend: CLI.
+  cli:
+    build:
+      context: ./api
+      dockerfile: docker/cli/Dockerfile
+    image: "${PROJECT_ID}-backend"
+    volumes:
+      - ./api:/app:cached
+
+  ## 8080: Backend: Nginx.
+  nginx:
+    build:
+      context: ./api
+      dockerfile: docker/nginx/Dockerfile
+      args:
+        CLI_IMAGE: "${PROJECT_ID}-backend"
+    ports:
+      - "8080:80"
+    labels:
+      - 'traefik.backend=backend_nginx'
+      - 'traefik.port=8080'
+      - 'traefik.frontend.passHostHeader=true'
+      - 'traefik.frontend.rule=Host:api.${PROJECT_ID}.localhost'
+    volumes:
+      - ./api:/app:cached
+    depends_on:
+      - cli
+
+  ## Backend: PHP.
+  php:
+    build:
+      context: ./api
+      dockerfile: docker/php/Dockerfile
+      args:
+        CLI_IMAGE: "${PROJECT_ID}-backend"
+    env_file:
+      - .env
+    volumes:
+      - ./api:/app:cached
+    depends_on:
+      - cli
+
+  ## 3306: Backend: Database.
+  database:
+    build: ./api/docker/database
+    container_name: "${PROJECT_ID}_database"
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+    env_file:
+      - .env
