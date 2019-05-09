@@ -23,6 +23,9 @@ down: docker-compose-down
 ## Restart the server(s).
 restart: docker-compose-restart docker-compose-logs
 
+## Show server log(s).
+logs: docker-compose-logs
+
 print-init:
 	@$(call title,${PROJECT_NAME} - Development environment)
 	@$(call print,The ${PROJECT_NAME} development environment has been initialised.\n)
