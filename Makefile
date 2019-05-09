@@ -40,3 +40,6 @@ print-install:
 	@$(call title,Local development URLs)
 	@$(call print,Frontend: http://${PROJECT_ID}.localhost)
 	@$(call print,Backend: http://api.${PROJECT_ID}.localhost)
+
+	@$(call title,Backend login link)
+	@$(call drush,uli)
