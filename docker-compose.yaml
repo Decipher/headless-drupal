@@ -2,7 +2,7 @@ version: '2.3'
 
 services:
 
-  ## 80: Reverse proxy: Traefik.
+  ## 80: Reverse proxy.
   traefik:
     image: traefik
     container_name: "${PROJECT_ID}_traefik"
@@ -14,9 +14,11 @@ services:
     networks:
       default:
         aliases:
+          - "${PROJECT_ID}.localhost"
           - "api.${PROJECT_ID}.localhost"
+          - "www.${PROJECT_ID}.localhost"
 
-  ## 3000: Frontend: Nuxt.js.
+  ## 3000: Node.
   node:
     build:
       context: ./www
@@ -35,18 +37,20 @@ services:
     volumes:
       - ./www:/app:cached
 
-  ## Backend: CLI.
-  cli:
-    build:
-      context: ./api
-      dockerfile: docker/cli/Dockerfile
-    image: "${PROJECT_ID}-backend"
+  ## 3306: Database.
+  database:
+    build: ./api/docker/database
+    container_name: "${PROJECT_ID}_database"
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
     env_file:
       - .env
     volumes:
-      - ./api:/app:cached
+      - ./database:/var/lib/mysql
 
-  ## 8080: Backend: Nginx.
+  ## 8080: Nginx.
   nginx:
     build:
       context: ./api
@@ -58,7 +62,7 @@ services:
     env_file:
       - .env
     labels:
-      - 'traefik.backend=backend_nginx'
+      - 'traefik.backend=nginx'
       - 'traefik.port=8080'
       - 'traefik.frontend.passHostHeader=true'
       - 'traefik.frontend.rule=Host:api.${PROJECT_ID}.localhost'
@@ -67,7 +71,18 @@ services:
     depends_on:
       - cli
 
-  ## Backend: PHP.
+  ## 9000: CLI.
+  cli:
+    build:
+      context: ./api
+      dockerfile: docker/cli/Dockerfile
+    image: "${PROJECT_ID}-backend"
+    env_file:
+      - .env
+    volumes:
+      - ./api:/app:cached
+
+  ## 9000: PHP.
   php:
     build:
       context: ./api
@@ -80,14 +95,3 @@ services:
       - ./api:/app:cached
     depends_on:
       - cli
-
-  ## 3306: Backend: Database.
-  database:
-    build: ./api/docker/database
-    container_name: "${PROJECT_ID}_database"
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=true
-    env_file:
-      - .env
