@@ -1,6 +1,6 @@
 [submodule "www"]
 	path = www
-	url = git@git.realityloop.com:realityloop/demos/headless-blog-nuxt.git
+	url = git@github.com:Decipher/headless-drupal-nuxt.git
 [submodule "api"]
 	path = api
-	url = git@git.realityloop.com:realityloop/demos/headless-blog-contentacms.git
+	url = git@github.com:Decipher/headless-drupal-contenta.git
